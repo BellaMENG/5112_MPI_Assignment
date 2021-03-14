@@ -1,31 +1,101 @@
-#include "clustering.h"
+//
+//  replicate.cpp
+//  5112Assignment
+//
+//  Created by MENG Zihan on 3/14/21.
+//
+#include "mpi_assignment/clustering.h"
 
+#include <stdio.h>
 #include "mpi.h"
 
 #include <cassert>
 #include <chrono>
+#include <iostream>
 
 using namespace std;
 
-
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
     
     MPI_Comm comm;
-    int num_process; // number of processors
-    int my_rank;     // my global rank
+    int num_process;
+    int my_rank;
     
     comm = MPI_COMM_WORLD;
     
     MPI_Comm_size(comm, &num_process);
     MPI_Comm_rank(comm, &my_rank);
     
-    if (argc != 3) {
-        std::cerr << "usage: ./clustering_sequential data_path result_path"
-        << std::endl;
-        
-        return -1;
+    int local_n;
+    //replicate
+    int *i_local_results = nullptr;
+    int *results = nullptr;
+    int uneven_sizes[4] = {1, 2, 3, 4};
+    int total_num = 10;
+    
+    int *uneven_local = nullptr;
+    uneven_local = (int*)malloc(uneven_sizes[my_rank]*sizeof(int));
+    for (size_t i = 0; i < uneven_sizes[my_rank]; ++i) {
+        uneven_local[i] = my_rank;
     }
+    
+    int *displs = nullptr;
+    int rbuf = 0;
+    
+    displs = (int*)malloc(num_process*sizeof(int));
+    displs[0] = 0;
+    rbuf += (uneven_sizes[0] + 1);
+    for (int i = 1; i < num_process; ++i) {
+        displs[i] = uneven_sizes[i-1] + displs[i-1] + 1;
+        rbuf += (uneven_sizes[i] + 1);
+    }
+
+    int *uneven_all = nullptr;
+    uneven_all = (int*)malloc(rbuf*sizeof(int));
+    MPI_Gatherv(uneven_local, uneven_sizes[my_rank], MPI_INT, uneven_all, uneven_sizes, displs, MPI_INT, 0, comm);
+    
+    int *final_result = nullptr;
+    final_result = (int*)malloc(total_num*sizeof(int));
+    int j = 0;
+    for (int i = 0; i < num_process; ++i) {
+        for (int k = displs[i]; k < displs[i] + uneven_sizes[i]; ++k) {
+            final_result[j] = uneven_all[k];
+            ++j;
+        }
+    }
+    
+    if (my_rank == 0) {
+        for (int i = 0; i < rbuf; ++i) {
+            cout << uneven_all[i] << " ";
+        }
+        cout << endl;
+        for (int i = 0; i < rbuf; ++i) {
+            cout << final_result[i] << " ";
+        }
+        cout << endl;
+    }
+    
+    i_local_results = (int*)malloc(local_n*sizeof(int));
+    for (size_t i = 0; i < local_n; ++i) {
+        i_local_results[i] = my_rank;
+    }
+    
+    for (size_t i = 0; i < local_n; ++i) {
+        cout << "process " << my_rank << ": " << i << " " << i_local_results[i] << endl;
+    }
+    MPI_Barrier(comm);
+    results = (int*)malloc(12*sizeof(int));
+    MPI_Gather(i_local_results, local_n, MPI_INT, results, local_n, MPI_INT, 0, comm);
+    
+    if (my_rank == 0) {
+        for (int i = 0; i < 12; ++i) {
+            cout << results[i] << " ";
+        }
+        cout << endl;
+    }
+    //replicate
+    
     std::string dir(argv[1]);
     std::string result_path(argv[2]);
     
@@ -38,23 +108,18 @@ int main(int argc, char **argv) {
     
     GraphMetaInfo *info = nullptr;
     
-    // read graph info from files
     if (my_rank == 0) {
         num_graphs = read_files(dir, info, nbr_offs, nbrs);
     }
-    auto start_clock = chrono::high_resolution_clock::now();
-    // ADD THE CODE HERE
     
-    // have sizes of num_process
     int *nbr_offs_starts = nullptr;
     int *nbrs_starts = nullptr;
     int *result_sizes = nullptr;
-    
-    // have sizes of num_graphs
     int *num_vertices_all = nullptr;
     int *num_edges_all = nullptr;
-        
-    int local_n;
+    
+    
+    
     // have sizes of local_n
     int *local_num_vertices = nullptr;
     int *local_num_edges = nullptr;
@@ -68,6 +133,8 @@ int main(int argc, char **argv) {
     
     int nbr_offs_start = 0, nbrs_start = 0;
     int sizes = 0;
+    
+    local_n = 12/num_process;
     
     if (my_rank == 0) {
         local_n = num_graphs/num_process;
@@ -102,18 +169,14 @@ int main(int argc, char **argv) {
                 result_sizes[i/local_n] = sizes;
             }
         }
-//        cout << "in process 0, num_vertices_all[11] is: " << num_vertices_all[11] << endl;
     }
     
-//    cout << "Process " << my_rank << ": after getting information?" << endl;
     MPI_Bcast(&num_graphs, 1, MPI_INT, 0, comm);
     MPI_Bcast(&num_vertices_sum, 1, MPI_INT, 0, comm);
     MPI_Bcast(&nbr_offs_size, 1, MPI_INT, 0, comm);
     MPI_Bcast(&nbrs_size, 1, MPI_INT, 0, comm);
-//    cout << "Process " << my_rank << ": " << num_graphs << " " << num_vertices_sum << " " << nbr_offs_size << " " << nbrs_size << " " << num_graphs/num_process << endl; check
-    MPI_Barrier(comm);
     local_n = num_graphs/num_process;
-//    cout << "my_rank: " << my_rank << " local_n: " << local_n << "\n\n";
+    
     if (my_rank != 0) {
         nbr_offs_starts = (int*)malloc(num_process*sizeof(int));
         nbrs_starts = (int*)malloc(num_process*sizeof(int));
@@ -122,7 +185,6 @@ int main(int argc, char **argv) {
         nbr_offs = (int*)malloc(nbr_offs_size*sizeof(int));
         nbrs = (int*)malloc(nbrs_size*sizeof(int));
     }
-    
     MPI_Bcast(nbr_offs_starts, num_process, MPI_INT, 0, comm);
     MPI_Bcast(nbrs_starts, num_process, MPI_INT, 0, comm);
     MPI_Bcast(result_sizes, num_process, MPI_INT, 0, comm);
@@ -136,8 +198,7 @@ int main(int argc, char **argv) {
     
     MPI_Scatter(num_vertices_all, local_n, MPI_INT, local_num_vertices, local_n, MPI_INT, 0, comm);
     MPI_Scatter(num_edges_all, local_n, MPI_INT, local_num_edges, local_n, MPI_INT, 0, comm);
-    
-    
+
     int *num_cluster_total_local = nullptr;
     num_cluster_total_local = (int*)malloc(local_n * sizeof(int));
     int *local_results = nullptr;
@@ -145,7 +206,7 @@ int main(int argc, char **argv) {
     
     nbr_offs_local = nbr_offs + nbr_offs_starts[my_rank];
     nbrs_local = nbrs + nbrs_starts[my_rank];
-    
+
     int index = 0;
     for (size_t i = 0; i < (num_graphs/num_process); ++i) {
         GraphMetaInfo info_local;
@@ -159,74 +220,28 @@ int main(int argc, char **argv) {
         }
         num_cluster_total_local[i] = num_cluster_local;
         
-//        cout << "Process " << my_rank << " graph " << i << " num_cluster_local: " << num_cluster_local << endl;
+        cout << "Process " << my_rank << " graph " << i << " num_cluster_local: " << num_cluster_local << endl;
         
         nbr_offs_local += (info_local.num_vertices + 1);
         nbrs_local += (info_local.num_edges + 1);
     }
-
+    
     num_cluster_total = (int*)malloc(num_graphs*sizeof(int));
     MPI_Gather(num_cluster_total_local, local_n, MPI_INT, num_cluster_total, local_n, MPI_INT, 0, comm);
+    if (my_rank == 0) {
+        cout << "num_cluster_total[size-1]: " << num_cluster_total[11] << endl;;
+    }
     
-    MPI_Barrier(comm);
+//    clustering_results = (int*)malloc(num_vertices_sum*sizeof(int));
+//    cout << "result_sizes[my_rank]" << result_sizes[my_rank] << endl;
+//    cout << "num_vertices_sum " << num_vertices_sum << endl;
+//    MPI_Gather(local_results, result_sizes[my_rank], MPI_INT, clustering_results, result_sizes[my_rank], MPI_INT, 0, comm);
+//
+//    if (my_rank == 0) {
+//        cout << "clustering_results[0]: " << clustering_results[0] << endl;
+//    }
 
-    clustering_results = (int*)malloc(num_vertices_sum*sizeof(int));
-    
-    int *uneven_all = nullptr;
-    int *displs = nullptr;
-    int rbuf = 0;
-    
-    displs = (int*)malloc(num_process*sizeof(int));
-    displs[0] = 0;
-    rbuf += (result_sizes[0] + 1);
-    for (int i = 1; i < num_process; ++i) {
-        displs[i] = result_sizes[i-1] + displs[i-1] + 1;
-        rbuf += (result_sizes[i] + 1);
-    }
-    
-    uneven_all = (int*)malloc(rbuf*sizeof(int));
-    MPI_Gatherv(local_results, result_sizes[my_rank], MPI_INT, uneven_all, result_sizes, displs, MPI_INT, 0, comm);
-    
-    int j = 0;
-    for (int i = 0; i < num_process; ++i) {
-        for (int k = displs[i]; k < displs[i] + result_sizes[i]; ++k) {
-            clustering_results[j] = uneven_all[k];
-            ++j;
-        }
-    }
-    
+    // pseudo code
     MPI_Barrier(comm);
-    
-    auto end_clock = chrono::high_resolution_clock::now();
-    
-    // 1) print results to screen
-    if (my_rank == 0) {
-        for (size_t i = 0; i < num_graphs; i++) {
-            printf("num cluster in graph %d : %d\n", i, num_cluster_total[i]);
-        }
-        fprintf(stderr, "Elapsed Time: %.9lf ms\n",
-                chrono::duration_cast<chrono::nanoseconds>(end_clock - start_clock)
-                .count() /
-                pow(10, 6));
-    }
-    
-    // 2) write results to file
-    if (my_rank == 0) {
-        int *result_graph = clustering_results;
-        for (int i = 0; i < num_graphs; i++) {
-            GraphMetaInfo info_local = info[i];
-            write_result_to_file(info_local, i, num_cluster_total[i], result_graph,
-                                 result_path);
-            
-            result_graph += info_local.num_vertices;
-        }
-    }
-    
     MPI_Finalize();
-    
-    if (my_rank == 0) {
-        free(num_cluster_total);
-    }
-    
-    return 0;
 }

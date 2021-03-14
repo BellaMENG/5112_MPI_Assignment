@@ -54,6 +54,11 @@ int main(int argc, char **argv) {
               pow(10, 6));
 
   // write results to file
+//  int results_sum = 0;
+//  for (int i = 0; i < num_graphs; i++) {
+//    results_sum += clustering_results[i];
+//  }
+//  cout << "sum of clustering results is: " << results_sum << endl;
   for (int i = 0; i < num_graphs; i++) {
     GraphMetaInfo info_local = info[i];
     write_result_to_file(info_local, i, num_cluster_total[i],

@@ -31,7 +31,8 @@
 		6E0A586425F7701500EF0886 /* clustering_impl.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = clustering_impl.cpp; path = mpi_assignment/clustering_impl.cpp; sourceTree = "<group>"; };
 		6E0A586525F7701500EF0886 /* clustering_mpi_skeleton.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = clustering_mpi_skeleton.cpp; path = mpi_assignment/clustering_mpi_skeleton.cpp; sourceTree = "<group>"; };
 		6E0A586625F7701500EF0886 /* clustering_sequential.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = clustering_sequential.cpp; path = mpi_assignment/clustering_sequential.cpp; sourceTree = "<group>"; };
-		6EF43BBF25F86C7F00509519 /* 5112Assignment */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; name = 5112Assignment; path = /Users/zmeng/Documents/mpi_assignment/5112Assignment/build/Debug/5112Assignment; sourceTree = "<absolute>"; };
+		6EBC47B825FE2604002B600F /* 5112Assignment */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = 5112Assignment; sourceTree = BUILT_PRODUCTS_DIR; };
+		6EBC47B925FE2A07002B600F /* replicate.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = replicate.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -48,12 +49,14 @@
 		6ED783EA25E8A1180045096D = {
 			isa = PBXGroup;
 			children = (
+				6EBC47B925FE2A07002B600F /* replicate.cpp */,
 				6E0A586425F7701500EF0886 /* clustering_impl.cpp */,
 				6E0A586525F7701500EF0886 /* clustering_mpi_skeleton.cpp */,
 				6E0A586625F7701500EF0886 /* clustering_sequential.cpp */,
 				6E0A586225F7701500EF0886 /* clustering.h */,
 				6E0A586325F7701500EF0886 /* dataset */,
 				6E0A586125F7701500EF0886 /* results */,
+				6EBC47B825FE2604002B600F /* 5112Assignment */,
 			);
 			sourceTree = "<group>";
 		};
@@ -74,7 +77,7 @@
 			);
 			name = 5112Assignment;
 			productName = 5112Assignment;
-			productReference = 6EF43BBF25F86C7F00509519 /* 5112Assignment */;
+			productReference = 6EBC47B825FE2604002B600F /* 5112Assignment */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
